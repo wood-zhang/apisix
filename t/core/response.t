@@ -163,3 +163,38 @@ done
 aaa:
 --- no_error_log
 [error]
+
+
+
+=== TEST 8: exit with table
+--- config
+    set $ctx_ref '';
+    error_page 503 = /err;
+
+    location = /t {
+        access_by_lua_block {
+            local core = require("apisix.core")
+            ngx.ctx.blah = "blahblah"
+            core.response.exit(503)
+        }
+    }
+
+    location = /err {
+        header_filter_by_lua_block {
+            if ngx.var.ctx_ref ~= '' then
+                local ctxdump = require("resty.ctxdump")
+                local ref = ngx.var.ctx_ref
+                local ctx = ctxdump.apply_ngx_ctx(ref)
+                ngx.var.ctx_ref = ''
+                ngx.say(ctx.blah)
+            end
+        }
+    }
+--- request
+GET /t
+--- error_code: 503
+--- response_body
+blahblah
+--- no_error_log
+[error]
+--- ONLY

@@ -522,7 +522,7 @@ _EOC_
     lua_socket_log_errors off;
     client_body_buffer_size 8k;
 
-    error_page 500 \@50x.html;
+    error_page 503 \@50x.html;
 
     variables_hash_bucket_size 128;
 

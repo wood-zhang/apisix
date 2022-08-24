@@ -325,7 +325,7 @@ http {
     charset {* http.charset *};
 
     # error_page
-    error_page 500 @50x.html;
+    error_page 503 @50x.html;
 
     {% if real_ip_header then %}
     real_ip_header {* real_ip_header *};
@@ -400,7 +400,6 @@ http {
 
     {% if use_apisix_openresty then %}
     apisix_delay_client_max_body_check on;
-    apisix_mirror_on_demand on;
     {% end %}
 
     {% if wasm then %}

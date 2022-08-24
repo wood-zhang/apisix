@@ -148,7 +148,6 @@ function _M.http_exit_worker()
     require("apisix.plugins.ext-plugin.init").exit_worker()
 end
 
-
 function _M.http_ssl_phase()
     local ngx_ctx = ngx.ctx
     local api_ctx = ngx_ctx.api_ctx
@@ -158,7 +157,17 @@ function _M.http_ssl_phase()
         ngx_ctx.api_ctx = api_ctx
     end
 
+    core.log.error("================= levy api_ctx in ssl phase: ", core.json.encode(api_ctx, true))
     local ok, err = router.router_ssl.match_and_set(api_ctx)
+
+    -- local key = api_ctx.matched_ssl.value.key
+    -- local cert = api_ctx.matched_ssl.value.cert
+    -- api_ctx.matched_ssl.value.key = nil
+    -- api_ctx.matched_ssl.value.cert = nil
+    -- core.log.error("================= levy api_ctx in ssl phase: ", core.json.encode(api_ctx, true))
+    -- api_ctx.matched_ssl.value.key = key
+    -- api_ctx.matched_ssl.value.cert = cert
+
     if not ok then
         if err then
             core.log.error("failed to fetch ssl config: ", err)
@@ -354,9 +363,16 @@ function _M.http_access_phase()
         return core.response.exit(400)
     end
 
+    --core.log.error("============= levy ngx.ctx.api_ctx before fetch in access phase: ", core.json.encode(ngx.ctx.api_ctx, true))
+    local ssl_api_ctx = ngx.ctx.api_ctx
+
     -- always fetch table from the table pool, we don't need a reused api_ctx
     local api_ctx = core.tablepool.fetch("api_ctx", 0, 32)
     ngx_ctx.api_ctx = api_ctx
+
+    if api_ctx == ssl_api_ctx then
+        core.log.error("=============== levy fetch table from the ssl phase, api_ctx: ", core.json.encode(api_ctx, true))
+    end
 
     core.ctx.set_vars_meta(api_ctx)
 
@@ -514,6 +530,9 @@ function _M.http_access_phase()
     local code, err = set_upstream(route, api_ctx)
     if code then
         core.log.error("failed to set upstream: ", err)
+        --core.log.error("============= levy ngx.ctx.api_ctx before in access phase: ", core.json.encode(ngx.ctx.api_ctx, true))
+        --ngx.ctx.api_ctx = nil
+        --core.log.error("============= levy ngx.ctx.api_ctx after in access phase: ", core.json.encode(ngx.ctx.api_ctx, true))
         core.response.exit(code)
     end
 
@@ -599,7 +618,7 @@ local function set_resp_upstream_status(up_status)
     end
 end
 
-
+local get_request  = require("resty.ngxvar").request
 function _M.http_header_filter_phase()
     if ngx_var.ctx_ref ~= '' then
         -- prevent for the table leak
@@ -609,6 +628,18 @@ function _M.http_header_filter_phase()
         if ngx_var.from_error_page == "true" then
             ngx.ctx = stash_ctx
         end
+    end
+
+    --core.log.error("============= levy ngx.ctx.api_ctx: ", core.json.encode(ngx.ctx.api_ctx, true))
+
+    --core.log.error("============= levy response time: ", ngx.ctx.api_ctx.var.upstream_response_time * 1000)
+    local r = get_request()
+    local api_ctx = ngx.ctx.api_ctx
+    local var = api_ctx and api_ctx.var
+    local old_r = var and var._request
+    if old_r and old_r ~= r then
+        core.log.error("============ levy old request is not equal to new request")
+        core.log.error("============= levy ngx.ctx.api_ctx in header filter: ", core.json.encode(ngx.ctx.api_ctx, true))
     end
 
     core.response.set_header("Server", ver_header)
@@ -725,6 +756,8 @@ function _M.http_log_phase()
     if api_ctx.curr_req_matched then
         core.tablepool.release("matched_route_record", api_ctx.curr_req_matched)
     end
+
+    core.log.error("============== levy release api_ctx table to tablepool")
 
     core.tablepool.release("api_ctx", api_ctx)
 end
