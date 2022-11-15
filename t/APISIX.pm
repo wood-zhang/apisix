@@ -531,6 +531,7 @@ _EOC_
 
     lua_shared_dict plugin-limit-req 10m;
     lua_shared_dict plugin-limit-count 10m;
+    lua_shared_dict plugin-limit-count-multiple 10m;
     lua_shared_dict plugin-limit-conn 10m;
     lua_shared_dict internal-status 10m;
     lua_shared_dict upstream-healthcheck 32m;
@@ -540,6 +541,7 @@ _EOC_
     lua_shared_dict balancer-ewma-locks 1m;
     lua_shared_dict balancer-ewma-last-touched-at 1m;
     lua_shared_dict plugin-limit-count-redis-cluster-slot-lock 1m;
+    lua_shared_dict plugin-limit-count-multiple-redis-cluster-slot-lock 1m;
     lua_shared_dict tracing_buffer 10m;    # plugin skywalking
     lua_shared_dict access-tokens 1m;    # plugin authz-keycloak
     lua_shared_dict discovery 1m;    # plugin authz-keycloak

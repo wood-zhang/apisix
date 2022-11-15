@@ -131,6 +131,7 @@ local function new_lru_fun(opts)
         if obj ~= nil then
             lru_obj:set(key, {val = obj, ver = version}, item_ttl)
         end
+
         lock:unlock()
         log.info("unlock with key ", key_s)
 
