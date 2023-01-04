@@ -131,3 +131,8 @@ jobs:
         env:
           TEST_FILE_SUB_DIR: ${{ matrix.test_dir }}
         run: sudo -E ./ci/${{ matrix.os_name }}_runner.sh script
+
+      - name: Run debugger
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
