@@ -170,17 +170,17 @@ function _M.http_init(prometheus_enabled_in_stream)
     -- no consumer in request.
     metrics.status = prometheus:counter("http_status",
             "HTTP status codes per service in APISIX",
-            {"code", "route", "matched_uri", "matched_host", "service", "consumer", "node",
+            {"code", "route", "matched_uri", "matched_host", "service", "consumer",
             unpack(extra_labels("http_status"))})
 
     metrics.latency = prometheus:histogram("http_latency",
         "HTTP request latency in milliseconds per service in APISIX",
-        {"type", "route", "service", "consumer", "node", unpack(extra_labels("http_latency"))},
+        {"type", "route", "service", "consumer", unpack(extra_labels("http_latency"))},
         DEFAULT_BUCKETS)
 
     metrics.bandwidth = prometheus:counter("bandwidth",
             "Total bandwidth in bytes consumed per service in APISIX",
-            {"type", "route", "service", "consumer", "node", unpack(extra_labels("bandwidth"))})
+            {"type", "route", "service", "consumer", unpack(extra_labels("bandwidth"))})
 
     if prometheus_enabled_in_stream then
         init_stream_metrics()
@@ -242,34 +242,34 @@ function _M.http_log(conf, ctx)
 
     metrics.status:inc(1,
         gen_arr(vars.status, route_id, matched_uri, matched_host,
-                service_id, consumer_name, balancer_ip,
+                service_id, consumer_name,
                 unpack(extra_labels("http_status", ctx))))
 
     local latency, upstream_latency, apisix_latency = latency_details(ctx)
     local latency_extra_label_values = extra_labels("http_latency", ctx)
 
     metrics.latency:observe(latency,
-        gen_arr("request", route_id, service_id, consumer_name, balancer_ip,
+        gen_arr("request", route_id, service_id, consumer_name,
         unpack(latency_extra_label_values)))
 
     if upstream_latency then
         metrics.latency:observe(upstream_latency,
-            gen_arr("upstream", route_id, service_id, consumer_name, balancer_ip,
+            gen_arr("upstream", route_id, service_id, consumer_name,
             unpack(latency_extra_label_values)))
     end
 
     metrics.latency:observe(apisix_latency,
-        gen_arr("apisix", route_id, service_id, consumer_name, balancer_ip,
+        gen_arr("apisix", route_id, service_id, consumer_name,
         unpack(latency_extra_label_values)))
 
     local bandwidth_extra_label_values = extra_labels("bandwidth", ctx)
 
     metrics.bandwidth:inc(vars.request_length,
-        gen_arr("ingress", route_id, service_id, consumer_name, balancer_ip,
+        gen_arr("ingress", route_id, service_id, consumer_name,
         unpack(bandwidth_extra_label_values)))
 
     metrics.bandwidth:inc(vars.bytes_sent,
-        gen_arr("egress", route_id, service_id, consumer_name, balancer_ip,
+        gen_arr("egress", route_id, service_id, consumer_name,
         unpack(bandwidth_extra_label_values)))
 end
 
